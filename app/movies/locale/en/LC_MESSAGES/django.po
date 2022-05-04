@@ -1,0 +1,106 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-04-04 07:20+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: movies/admin.py:32 movies/admin.py:59 movies/models/genre.py:15
+#: movies/models/genre_filmwork.py:12
+msgid "genre"
+msgstr ""
+
+#: movies/admin.py:33 movies/models/filmwork.py:25 movies/models/genre.py:16
+msgid "genres"
+msgstr ""
+
+#: movies/admin.py:41 movies/admin.py:60 movies/models/person.py:14
+#: movies/models/person_filmwork.py:18
+msgid "person"
+msgstr ""
+
+#: movies/admin.py:42 movies/models/filmwork.py:26 movies/models/person.py:15
+msgid "persons"
+msgstr ""
+
+#: movies/apps.py:12
+msgid "movies"
+msgstr ""
+
+#: movies/models/filmwork.py:14
+msgid "Movie"
+msgstr ""
+
+#: movies/models/filmwork.py:15
+msgid "Tv show"
+msgstr ""
+
+#: movies/models/filmwork.py:17 movies/models/genre.py:10
+msgid "name"
+msgstr ""
+
+#: movies/models/filmwork.py:18 movies/models/genre.py:11
+msgid "description"
+msgstr ""
+
+#: movies/models/filmwork.py:19
+msgid "creation_date"
+msgstr ""
+
+#: movies/models/filmwork.py:20
+msgid "rating"
+msgstr ""
+
+#: movies/models/filmwork.py:24
+msgid "type"
+msgstr ""
+
+#: movies/models/filmwork.py:30 movies/models/genre_filmwork.py:11
+#: movies/models/person_filmwork.py:17
+msgid "filmwork"
+msgstr ""
+
+#: movies/models/filmwork.py:31
+msgid "filmworks"
+msgstr ""
+
+#: movies/models/mixins.py:21
+msgid "created"
+msgstr ""
+
+#: movies/models/mixins.py:22
+msgid "modified"
+msgstr ""
+
+#: movies/models/person.py:10
+msgid "full_name"
+msgstr ""
+
+#: movies/models/person_filmwork.py:13
+msgid "Director"
+msgstr ""
+
+#: movies/models/person_filmwork.py:14
+msgid "Actor"
+msgstr ""
+
+#: movies/models/person_filmwork.py:15
+msgid "Screenwriter"
+msgstr ""
+
+#: movies/models/person_filmwork.py:19
+msgid "role"
+msgstr ""
