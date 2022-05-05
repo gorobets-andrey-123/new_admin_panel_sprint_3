@@ -98,7 +98,7 @@ msgid "Actor"
 msgstr ""
 
 #: movies/models/person_filmwork.py:15
-msgid "Screenwriter"
+msgid "Writer"
 msgstr ""
 
 #: movies/models/person_filmwork.py:19

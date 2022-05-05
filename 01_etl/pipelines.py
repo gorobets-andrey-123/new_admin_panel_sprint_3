@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 
-from . import enrichers, loaders, producers, transformers
+import enrichers
+import loaders
+import producers
+import transformers
 
 
 @dataclass
@@ -10,7 +13,7 @@ class Pipeline:
     transformer: transformers.Base
     loader: loaders.Base
 
-    def run(self):
+    def execute(self):
         chunks = self.producer.produce()
         for chunk in chunks:
             last_modified = max([modified for _, modified in chunk])

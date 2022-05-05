@@ -1,24 +1,14 @@
 import os
-import types
 
 from psycopg2.extras import DictCursor, register_uuid
 
-import models
-
 register_uuid()
 
-# Кол-во загружаемых записей за раз
-CHUNK_SIZE = 1000
+# Частота проверки обновлений
+CHECK_INTERVAL_SEC = os.environ.get('CHECK_INTERVAL_SEC', 10)
 
-# Загружаемые таблицы и связанные с ними сущности,
-# в которые будут отображены полученные из sqlite строки
-TABLE_ENTITY_CLS_MAP = types.MappingProxyType({
-    'film_work': models.Filmwork,
-    'person': models.Person,
-    'genre': models.Genre,
-    'genre_film_work': models.GenreFilmwork,
-    'person_film_work': models.PersonFilmwork,
-})
+# Кол-во загружаемых записей за раз из бд
+CHUNK_SIZE = 1000
 
 PG_DSL = dict(
     dbname=os.environ.get('DB_NAME'),
@@ -29,4 +19,12 @@ PG_DSL = dict(
     options='-c search_path=public,content',
     cursor_factory=DictCursor,
 )
-SQLITE_DB_PATH = os.environ.get('SQLITE_PATH', 'db.sqlite')
+
+REDIS_DSL = dict(
+    host=os.environ.get('REDIS_HOST', 'localhost'),
+    port=os.environ.get('REDIS_PORT', 6379),
+    db=os.environ.get('REDIS_DB', 0)
+)
+
+# ключ, по которому будет храниться состояние в хранилище
+STORAGE_STATE_KEY = 'etl'

@@ -7,7 +7,7 @@ from uuid import UUID
 from dateutil.parser import parse as parse_datetime
 from psycopg2.extensions import connection as _connection
 
-from .states import State
+from states import State
 
 Chunk = NewType('Chunk', list[tuple[UUID, datetime]])
 
@@ -23,7 +23,7 @@ class Base(metaclass=ABCMeta):
     @property
     def last_modified(self) -> datetime:
         modified = self.state.retrieve_state(self.__class__.__name__)
-        return parse_datetime(modified) if modified else datetime(0, 0, 0, 0, 0, 0, 0)
+        return parse_datetime(modified) if modified else datetime(1, 1, 1, 0, 0, 0, 0)
 
     @last_modified.setter
     def last_modified(self, modified: datetime):
@@ -31,8 +31,9 @@ class Base(metaclass=ABCMeta):
 
     def produce(self) -> Generator[Chunk, None, None]:
         with self.conn.cursor() as curs:
-            curs.execute(self._sql(), self.last_modified)
+            curs.execute(self._sql(), (self.last_modified,))
 
+            has_rows = True
             while has_rows:
                 rows = curs.fetchmany(self.chunk_size)
                 if rows:
@@ -60,7 +61,7 @@ class PersonModified(Base):
             str
         """
         return '''
-            SELECT pfw.filmwork_id, p.modified FROM content.person p 
+            SELECT pfw.film_work_id, p.modified FROM content.person p 
             INNER JOIN content.person_film_work pfw ON pfw.person_id = p.id
             WHERE p.modified > %s 
             ORDER BY p.modified DESC
@@ -68,12 +69,33 @@ class PersonModified(Base):
 
 
 class GenreModified(Base):
+    """Находит все фильмы с жанром, чьи данные изменились с последнего синка."""
 
-    def produce(self) -> Generator[Chunk, None, None]:
-        pass
+    def _sql(self) -> str:
+        """Возвращает sql-запрос.
+
+        Returns
+            str
+        """
+        return '''
+            SELECT gfw.film_work_id, g.modified FROM content.genre g 
+            INNER JOIN content.genre_film_work gfw ON gfw.genre_id = p.id
+            WHERE g.modified > %s 
+            ORDER BY g.modified DESC
+        '''
 
 
 class FilmworkModified(Base):
+    """Находит все фильмы, чьи данные изменились с последнего синка."""
 
-    def produce(self) -> Generator[Chunk, None, None]:
-        pass
+    def _sql(self) -> str:
+        """Возвращает sql-запрос.
+
+        Returns
+            str
+        """
+        return '''
+            SELECT id, modified FROM content.film_work
+            WHERE modified > %s 
+            ORDER BY modified DESC
+        '''

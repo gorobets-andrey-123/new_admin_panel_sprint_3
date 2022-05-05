@@ -12,12 +12,12 @@ class PersonFilmwork(UUIDMixin):
     class Role(models.TextChoices):
         DIRECTOR = 'director', _('Director')
         ACTOR = 'actor', _('Actor')
-        SCREENWRITER = 'screenwriter', _('Screenwriter')
+        WRITER = 'writer', _('Writer')
 
     film_work: Filmwork = models.ForeignKey('Filmwork', on_delete=models.CASCADE, verbose_name=_('filmwork'))
     person: Person = models.ForeignKey('Person', on_delete=models.CASCADE, verbose_name=_('person'))
     role = models.CharField(
-            _('role'), choices=Role.choices, null=True, max_length=255,
+        _('role'), choices=Role.choices, null=True, max_length=255,
     )
     created = models.DateTimeField(auto_now_add=True)
 
