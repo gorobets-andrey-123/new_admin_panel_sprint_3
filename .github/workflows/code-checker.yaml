@@ -14,8 +14,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install flake8==4.0.1 flake8-bandit==2.1.2 bandit==1.7.2
-      - name: Flake8
-        run: flake8 01_etl/ app/ sqlite2pg/
+      - name: etl/ flake8 check
+        run: cd /01_etl/ && flake8
+      - name: app/ flake8 check
+        run: cd /app/ && flake8
+      - name: sqlite2pg/ flake8 check
+        run: cd /sqlite2pg/ && flake8
 #  tests:
 #    name: Тесты
 #    runs-on: ubuntu-latest

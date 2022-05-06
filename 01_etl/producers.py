@@ -4,10 +4,8 @@ from datetime import datetime
 from typing import Generator, NewType
 from uuid import UUID
 
-from dateutil.parser import parse as parse_datetime
-from psycopg2.extensions import connection as _connection
-
-from states import State
+from db import DB
+from utils import backoff
 
 Chunk = NewType('Chunk', list[tuple[UUID, datetime]])
 
@@ -16,22 +14,18 @@ Chunk = NewType('Chunk', list[tuple[UUID, datetime]])
 class Base(metaclass=ABCMeta):
     """Базовый класс для продьюсеров получающих данные из postgres"""
 
-    state: State
-    conn: _connection
+    db: DB
     chunk_size: int
 
-    @property
-    def last_modified(self) -> datetime:
-        modified = self.state.retrieve_state(self.__class__.__name__)
-        return parse_datetime(modified) if modified else datetime(1, 1, 1, 0, 0, 0, 0)
+    @backoff()
+    def produce(self, last_modified: datetime) -> Generator[Chunk, None, None]:
+        """ Выполняет запрос к бд на получение айдишников фильмов, в которых внесены изменения
 
-    @last_modified.setter
-    def last_modified(self, modified: datetime):
-        self.state.save_state(self.__class__.__name__, modified)
-
-    def produce(self) -> Generator[Chunk, None, None]:
-        with self.conn.cursor() as curs:
-            curs.execute(self._sql(), (self.last_modified,))
+        :param last_modified:
+        :return:
+        """
+        with self.db.cursor() as curs:
+            curs.execute(self._sql(), (last_modified,))
 
             has_rows = True
             while has_rows:
@@ -45,8 +39,7 @@ class Base(metaclass=ABCMeta):
     def _sql(self) -> str:
         """Возвращает sql-запрос.
 
-        Returns
-            str
+        :return:
         """
         pass
 
@@ -55,10 +48,9 @@ class PersonModified(Base):
     """Находит все фильмы, в которых приняли участие персоны, чьи данные изменились с последнего синка."""
 
     def _sql(self) -> str:
-        """Возвращает sql-запрос.
+        """Возвращает sql.
 
-        Returns
-            str
+        :return:
         """
         return '''
             SELECT pfw.film_work_id, p.modified FROM content.person p 
@@ -74,12 +66,11 @@ class GenreModified(Base):
     def _sql(self) -> str:
         """Возвращает sql-запрос.
 
-        Returns
-            str
+        :return:
         """
         return '''
             SELECT gfw.film_work_id, g.modified FROM content.genre g 
-            INNER JOIN content.genre_film_work gfw ON gfw.genre_id = p.id
+            INNER JOIN content.genre_film_work gfw ON gfw.genre_id = g.id
             WHERE g.modified > %s 
             ORDER BY g.modified DESC
         '''
@@ -91,8 +82,7 @@ class FilmworkModified(Base):
     def _sql(self) -> str:
         """Возвращает sql-запрос.
 
-        Returns
-            str
+        :return: str
         """
         return '''
             SELECT id, modified FROM content.film_work

@@ -3,23 +3,32 @@ from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
-from psycopg2.extensions import connection as _connection
-
 import models
+from db import DB
+from utils import backoff
 
 
-@dataclass
 class Base(metaclass=ABCMeta):
-    conn: _connection
+    """Базовый класс обогатителя."""
 
     @abstractmethod
     def enrich(self, ids: list[UUID]) -> list[Any]:
         pass
 
 
+@dataclass
 class Movie(Base):
+    """Получает из бд полные данные по фильму."""
+    db: DB
+
+    @backoff()
     def enrich(self, ids: list[UUID]) -> list[models.Movie]:
-        with self.conn.cursor() as curs:
+        """ Возвращает найденные модели фильмов по id.
+
+        :param ids:
+        :return:
+        """
+        with self.db.cursor() as curs:
             sql = '''
                 SELECT
                     fw.id,

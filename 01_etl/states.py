@@ -13,8 +13,7 @@ class BaseStorage(metaclass=ABCMeta):
     def retrieve_state(self) -> dict:
         """Возвращает сохраненное состояние.
 
-        Returns:
-            dict
+        :return:
         """
         pass
 
@@ -22,42 +21,62 @@ class BaseStorage(metaclass=ABCMeta):
     def save_state(self, state: dict) -> bool:
         """Сохраняет состояние.
 
-        Args:
-            state: dict
-
-        Returns:
-            Any
+        :param state:
+        :return:
         """
         pass
 
 
 @dataclass
 class RedisStorage(BaseStorage):
+    """Обеспечивает хранение состояния в redis."""
     redis: redis.Redis
-    key: str
+    name: str
 
     def retrieve_state(self) -> Any:
         """Возвращает сохраненное состояние.
 
-        Returns:
-            dict
+        :return:
         """
-        return self.redis.hgetall(self.key)
+        state = self.redis.hgetall(self.name)
+        return self.decode_redis(state)
 
     def save_state(self, state: dict) -> None:
-        """Сохраняет состояние.
-
-        Args:
-            state: dict
-
-        Returns:
-            Any
         """
-        self.redis.hset(self.key, mapping=state)
+        Сохраняет состояние.
+
+        :param state:
+        :return:
+        """
+        self.redis.hset(self.name, mapping=state)
+
+    @classmethod
+    def decode_redis(cls, src):
+        """Преобразует поля из бинарного формата в формат python
+
+        :param src:
+        :return:
+        """
+        if isinstance(src, list):
+            rv = list()
+            for key in src:
+                rv.append(cls.decode_redis(key))
+            return rv
+        elif isinstance(src, dict):
+            rv = dict()
+            for key in src:
+                rv[key.decode()] = cls.decode_redis(src[key])
+            return rv
+        elif isinstance(src, bytes):
+            return src.decode()
+        else:
+            raise Exception("type not handled: " + type(src))
 
 
 @dataclass
 class State:
+    """Управляет состоянием."""
+
     storage: BaseStorage
     _state: dict[str, Any] = field(default_factory=dict)
 
@@ -67,23 +86,17 @@ class State:
     def retrieve_state(self, key: str) -> Any:
         """Возвращает сохраненное состояние по ключу.
 
-        Args:
-            key: str
-
-        Returns:
-            Any
+        :param key:
+        :return:
         """
         return self._state.get(key)
 
     def save_state(self, key: str, value: Any) -> bool:
         """Сохраняет значение по ключу.
 
-        Args:
-            key: str
-            value: Any
-
-        Returns:
-            bool
+        :param key:
+        :param value:
+        :return:
         """
         self._state[key] = value
         return self.storage.save_state(self._state)

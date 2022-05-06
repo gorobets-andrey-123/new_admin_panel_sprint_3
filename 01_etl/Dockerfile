@@ -13,4 +13,4 @@ USER web
 
 COPY --chown=web:web ./ /app
 
-CMD ["python", "etl.py"]
+CMD ["make", "load"]

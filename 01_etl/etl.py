@@ -1,9 +1,10 @@
+import logging
 import signal
 import time
 from dataclasses import dataclass
 
-import psycopg2
 import redis
+from elasticsearch import Elasticsearch
 
 import enrichers
 import loaders
@@ -11,11 +12,14 @@ import producers
 import settings
 import states
 import transformers
+from db import DB
 from pipelines import Pipeline
 
 
 @dataclass
-class Runner:
+class App:
+    """Запускает обреботку пайплайнов.
+    Обеспечивает корректное завершение при получении сигналов SIGINT и SIGTERM."""
     pipelines: list[Pipeline]
     check_interval_sec: int
     _stopped: bool = False
@@ -24,32 +28,70 @@ class Runner:
         signal.signal(signal.SIGINT, self.exit_gracefully)
         signal.signal(signal.SIGTERM, self.exit_gracefully)
 
-    def exit_gracefully(self):
+    def exit_gracefully(self, *args):
         self._stopped = True
 
     def run(self):
+        """Запускает пайплайны с инетрвалом."""
         while not self._stopped:
             for pipeline in self.pipelines:
                 pipeline.execute()
             time.sleep(self.check_interval_sec)
 
 
-def init_etl():
-    with psycopg2.connect(**settings.PG_DSL) as conn:
-        storage = states.RedisStorage(redis=redis.Redis(**settings.REDIS_DSL), key=settings.STORAGE_STATE_KEY)
-        state = states.State(storage)
-        enricher = enrichers.Movie(conn)
-        transformer = transformers.ElasticSearchMovie()
-        loader = loaders.ElasticSearchMovie(transformer)
+def init_app():
+    db = DB(dsn=settings.PG_DSN)
+    es_client = Elasticsearch(f'{settings.ES_SCHEMA}://{settings.ES_HOST}:{settings.ES_PORT}',
+                              max_retries=settings.ES_MAX_RETRIES)
+    redis_client = redis.Redis(**settings.REDIS_DSN)
 
-        pipelines = [
-            Pipeline(producers.PersonModified(state, conn, settings.CHUNK_SIZE), enricher, transformer, loader),
-            Pipeline(producers.GenreModified(state, conn, settings.CHUNK_SIZE), enricher, transformer, loader),
-            Pipeline(producers.FilmworkModified(state, conn, settings.CHUNK_SIZE), enricher, transformer, loader),
-        ]
+    storage = states.RedisStorage(redis=redis_client, name=settings.STORAGE_STATE_KEY)
+    state = states.State(storage)
 
-        Runner(pipelines=pipelines, check_interval_sec=settings.CHECK_INTERVAL_SEC).run()
+    enricher = enrichers.Movie(db)
+    transformer = transformers.ElasticSearchMovie()
+    loader = loaders.ElasticSearchMovie(client=es_client, index=settings.ES_MOVIE_INDEX_NAME)
+
+    formatter = logging.Formatter("%(asctime)s: %(levelname)s: %(name)s: %(message)s")
+    log_handler = logging.StreamHandler()
+    log_handler.setLevel(settings.LOGGING_LEVEL)
+    log_handler.setFormatter(formatter)
+    logger = logging.getLogger('ETL')
+    logger.addHandler(log_handler)
+    logger.setLevel(settings.LOGGING_LEVEL)
+
+    pipelines = [
+        Pipeline(
+            name='PersonModified',
+            state=state,
+            producer=producers.PersonModified(db, settings.CHUNK_SIZE),
+            enricher=enricher,
+            transformer=transformer,
+            loader=loader,
+            logger=logger,
+        ),
+        Pipeline(
+            name='GenreModified',
+            state=state,
+            producer=producers.GenreModified(db, settings.CHUNK_SIZE),
+            enricher=enricher,
+            transformer=transformer,
+            loader=loader,
+            logger=logger,
+        ),
+        Pipeline(
+            name='FilmworkModified',
+            state=state,
+            producer=producers.FilmworkModified(db, settings.CHUNK_SIZE),
+            enricher=enricher,
+            transformer=transformer,
+            loader=loader,
+            logger=logger,
+        ),
+    ]
+
+    App(pipelines=pipelines, check_interval_sec=settings.CHECK_INTERVAL_SEC).run()
 
 
 if __name__ == '__main__':
-    init_etl()
+    init_app()

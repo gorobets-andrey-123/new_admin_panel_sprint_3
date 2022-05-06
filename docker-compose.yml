@@ -47,6 +47,8 @@ services:
       - DB_USER
       - DB_PASSWORD
       - REDIS_HOST
+      - ES_SCHEMA
+      - ES_HOST
     depends_on:
       - app
       - redis
@@ -54,9 +56,15 @@ services:
       - postgres
     volumes:
       - ./01_etl:/app
+    command: make
 
   elasticsearch:
     image: elasticsearch:8.1.3
+    environment:
+      - 'discovery.type=single-node'
+      - 'xpack.security.enabled=false'
+    ports:
+      - "9200:9200"
 
   redis:
     image: redis:7.0.0-alpine
