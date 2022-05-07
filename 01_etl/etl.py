@@ -1,4 +1,3 @@
-import logging
 import signal
 import time
 from dataclasses import dataclass
@@ -13,6 +12,7 @@ import settings
 import states
 import transformers
 from db import DB
+from log import logger
 from pipelines import Pipeline
 
 
@@ -51,14 +51,6 @@ def init_app():
     enricher = enrichers.Movie(db)
     transformer = transformers.ElasticSearchMovie()
     loader = loaders.ElasticSearchMovie(client=es_client, index=settings.ES_MOVIE_INDEX_NAME)
-
-    formatter = logging.Formatter("%(asctime)s: %(levelname)s: %(name)s: %(message)s")
-    log_handler = logging.StreamHandler()
-    log_handler.setLevel(settings.LOGGING_LEVEL)
-    log_handler.setFormatter(formatter)
-    logger = logging.getLogger('ETL')
-    logger.addHandler(log_handler)
-    logger.setLevel(settings.LOGGING_LEVEL)
 
     pipelines = [
         Pipeline(

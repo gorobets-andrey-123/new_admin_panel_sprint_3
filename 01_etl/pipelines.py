@@ -7,6 +7,7 @@ import loaders
 import producers
 import states
 import transformers
+from utils import backoff
 
 
 @dataclass
@@ -33,7 +34,7 @@ class Pipeline:
         :return:
         """
         modified = self.state.retrieve_state(self.name)
-        return datetime.fromisoformat(modified) if modified else datetime(1, 1, 1, 0, 0, 0, 0, tzinfo=timezone.utc)
+        return datetime.fromisoformat(modified) if modified else datetime.min.replace(tzinfo=timezone.utc)
 
     @last_modified.setter
     def last_modified(self, modified: datetime):
@@ -44,6 +45,7 @@ class Pipeline:
         """
         self.state.save_state(self.name, modified.isoformat())
 
+    @backoff()
     def execute(self):
         """Выполняет загрузку данных из pg в elastic."""
         num = 1
