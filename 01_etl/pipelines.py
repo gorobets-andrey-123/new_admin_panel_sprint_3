@@ -64,7 +64,8 @@ class Pipeline:
             self.logger.debug(f'#{num}: Items loaded: {loaded}')
 
             new_last_modified = max([modified for _, modified in chunk])
-            self.last_modified = max(self.last_modified, new_last_modified)
+            if new_last_modified > self.last_modified:
+                self.last_modified = max(self.last_modified, new_last_modified)
 
             total_loaded += loaded
             num += 1
